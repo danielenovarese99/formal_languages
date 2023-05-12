@@ -1,0 +1,42 @@
+import java_cup.runtime.*;
+
+
+
+terminal C,OSBRACKET,CSBRACKET,OBRACKET,CBRACKET,EQ,BIGGER,SMALLER,MINUS,PLUS,DOUBLE,INT,ID,DOUBLE_TYPE,INT_TYPE,SC,DIVIDED,STAR,COND, PRINTFUNC;
+non terminal program, declaration_list, declaration, type, varlist, element, construct_list, construct, assignment, function,operation_list,operation,condition,condition_construct;
+
+start with program;
+
+program ::= declaration_list SC construct_list;
+declaration_list ::= declaration_list SC declaration | declaration;
+declaration ::= type varlist;
+type ::= DOUBLE_TYPE | INT_TYPE;
+varlist ::= varlist C element | element;
+element ::= ID 
+    | element OSBRACKET INT CSBRACKET
+    | element OSBRACKET ID CSBRACKET
+;
+
+construct_list ::= construct_list construct | construct;
+construct ::= assignment SC
+            | condition_construct
+            | function SC
+;
+assignment ::= element EQ operation_list;
+
+operation_list ::= 
+            | operation_list PLUS operation
+            | operation_list MINUS operation
+            | operation_list STAR operation
+            | operation_list DIVIDED operation
+            | operation_list BIGGER operation
+            | operation_list SMALLER operation
+            | operation
+;
+operation ::= element 
+            | INT
+            | DOUBLE
+;
+condition_construct ::= COND OBRACKET operation_list CBRACKET;
+
+function ::= PRINTFUNC OBRACKET varlist CBRACKET;

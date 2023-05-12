@@ -1,0 +1,46 @@
+import java_cup.runtime.*;
+
+terminal LETTER,DIGIT,QUOTE, HC, DIVIDER, SC,C,DOT,OSBRACKET, CSBRACKET, OBRACKET, CBRACKET, OGBRACKET,SGBRACKET,EQ,BIGGER,SMALLER,MINUS,PLUS,STAR,DIVIDED,KEYWORDS;
+non terminal program,hexadecimal,word,integer, first_section,second_section,writer_name,books_list,ISBN_c,book_title,number_of_pages,collocation,writer_list,writer,book,user,user_name,loans_list,loan;
+
+start with program;
+program ::= first_section DIVIDER DIVIDER second_section;
+first_section ::= first_section writer 
+                | writer;
+writer ::= QUOTE word QUOTE MINUS BIGGER books_list SC;
+
+books_list ::= books_list C book 
+             | book
+;
+
+book ::= ISBN_c HC QUOTE word QUOTE HC integer HC collocation
+        |ISBN_c HC QUOTE word QUOTE HC integer HC
+;
+ISBN_c ::= DIGIT DIGIT MINUS DIGIT DIGIT MINUS hexadecimal hexadecimal hexadecimal hexadecimal hexadecimal MINUS hexadecimal;
+
+
+collocation ::= KEYWORDS KEYWORDS integer LETTER
+            | KEYWORDS KEYWORDS integer
+;
+hexadecimal ::= DIGIT | LETTER;
+word ::= word LETTER 
+        | word C
+        | word DOT
+        | LETTER
+;
+integer ::= integer DIGIT 
+            | DIGIT
+;
+
+second_section ::= second_section user
+                | user
+;
+user ::= user_name HC loans_list SC;
+user_name ::= QUOTE word QUOTE;
+loans_list ::= loans_list C loan
+            | loan
+;
+loan ::= integer DIVIDED integer DIVIDED DIGIT DIGIT DIGIT DIGIT ISBN_c;
+
+
+
