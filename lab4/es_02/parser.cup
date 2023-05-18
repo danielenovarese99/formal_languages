@@ -19,7 +19,9 @@ non terminal program, declaration_list, declaration, type, varlist, element, con
 
 start with program;
 
-program ::= declaration_list SC construct_list;
+program ::= declaration_list SC construct_list
+            | error SC construct_list {: System.out.println("Error in declarations section"); :}
+;
 declaration_list ::= declaration_list SC declaration | declaration;
 declaration ::= type varlist;
 type ::= DOUBLE_TYPE | INT_TYPE;
@@ -27,6 +29,8 @@ varlist ::= varlist C element | element;
 element ::= ID 
     | element OSBRACKET INT CSBRACKET
     | element OSBRACKET ID CSBRACKET
+    | element OSBRACKET INT error {: System.out.println("Missing close parenthesis in array access"); :}
+    | element OSBRACKET ID error  {: System.out.println("Missing close parenthesis in array access"); :}
 ;
 
 construct_list ::= construct_list construct | construct;
@@ -34,7 +38,9 @@ construct ::= assignment SC
             | condition_construct
             | function SC
 ;
-assignment ::= element EQ operation_list;
+assignment ::= element EQ operation_list
+            | element EQ error {: System.out.println("Error in assignment"); :}
+;
 
 operation_list ::= 
             | operation_list PLUS operation
@@ -49,6 +55,11 @@ operation ::= element
             | INT
             | DOUBLE
 ;
-condition_construct ::= COND OBRACKET operation_list CBRACKET;
-
-function ::= PRINTFUNC OBRACKET varlist CBRACKET;
+condition_construct ::= COND OBRACKET operation_list CBRACKET
+                    | COND error operation_list CBRACKET  {: System.out.println("Missing open parenthesis in if"); :}
+                    | COND OBRACKET operation_list error {: System.out.println("Missing close parenthesis in if"); :}
+;
+function ::= PRINTFUNC OBRACKET varlist CBRACKET
+            |PRINTFUNC OBRACKET error CBRACKET {: System.out.println("Error in print function"); :}
+            |PRINTFUNC OBRACKET varlist error {: System.out.println("Error in print function"); :}
+;

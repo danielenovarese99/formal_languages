@@ -1,0 +1,59 @@
+import java_cup.runtime.*;
+
+parser code {:
+public void report_error(String message, Object info) {
+StringBuffer m = new StringBuffer(message);
+if (info instanceof Symbol) {
+if (((Symbol)info).left != -1 && ((Symbol)info).right != -1) {
+int line = (((Symbol)info).left)+1;
+int column = (((Symbol)info).right)+1;
+m.append(" (line "+line+", column "+column+")");
+}
+}
+System.err.println(m);
+}
+:}
+
+
+
+terminal ATOM,VARIABLE,SC,C,OSBRACKET,CSBRACKET,OBRACKET,CBRACKET,EQ,BIGGER,SMALLER,MINUS,PLUS,DIVIDED,STAR,DOT,DOUBLEDOT,QUESTION;
+non terminal logic_program, facts_list,fact,rules_list,rule,interrogation,predicate,arg_list,arg,functor,predicate_list;
+
+start with logic_program;
+logic_program ::= facts_list rules_list interrogation  
+            | facts_list interrogation 
+            | facts_list interrogation facts_list 
+            | facts_list rules_list facts_list 
+            | facts_list rules_list facts_list interrogation facts_list
+            | 
+;
+facts_list ::= facts_list fact
+            | fact DOT
+;
+fact ::= predicate;
+
+rules_list ::= predicate DOUBLEDOT MINUS predicate_list DOT;
+
+
+interrogation ::= QUESTION {: System.out.println("Interrogation"); :} 
+                MINUS predicate_list DOT
+;
+predicate_list ::= predicate_list C predicate 
+                | predicate
+;
+
+predicate ::= functor arg_list CBRACKET
+            | ATOM
+;
+functor ::= ATOM OBRACKET;
+
+arg_list ::= arg_list C arg 
+            | arg
+;
+arg ::= predicate
+        | VARIABLE
+;
+
+
+
+
