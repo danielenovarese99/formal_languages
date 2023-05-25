@@ -1,0 +1,72 @@
+import java_cup.runtime.*;
+import java.util.HashMap;
+
+init with {:
+    symbolTable = new HashMap<String, Double>();
+    vectorTable = new HashMap<String, Double[]>();
+:};
+
+
+parser code {:
+    public HashMap <String, Double>symbolTable;
+    public HashMap <String, Double[]> vectorTable;
+
+    public void report_error(String message, Object info) {
+        System.err.print("ERROR: Syntax error");
+        if (info instanceof Symbol)
+            if (((Symbol)info).left != -1){
+                int line = (((Symbol)info).left)+1;
+                int column = (((Symbol)info).right)+1;
+                System.err.print(" (line "+line+", column "+column+"): ");
+            } else System.err.print(": ");
+        else System.err.print(": ");
+    }
+
+:};
+
+terminal String SCALARVAR,VECTORVAR;
+terminal Double NUM;
+
+terminal C,OSBRACKET,CSBRACKET,OBRACKET,CBRACKET,EQ,BIGGER,SMALLER,MINUS,PLUS,SC,DIVIDED,STAR,QM,DOT;
+non terminal calculator,operation,operationList,expressionList,expression,assignment,vector_expression_list;
+non terminal Double scalar_expression,vector_scalar_expression;
+non terminal Double[] vector,vector_expression;
+
+
+start with calculator;
+
+calculator ::=  operationList QM;
+operationList ::= operation SC
+                | operation SC operationList
+;
+operation ::=  assignment
+                | scalar_expression:x {:System.out.println("Scalar expression: " + x); :}
+                | vector_expression:x {:System.out.println("Vector expression : [" + x[0] + "," + x[1] + "]");:}
+                | vector_scalar_expression:x {:System.out.println("Vector scalar expression : " + x); :}
+;
+assignment ::= SCALARVAR:x EQ scalar_expression:y {: parser.symbolTable.put(x,y); RESULT = y;System.out.println("Scalar assignment = " + y); :}
+            | VECTORVAR:x EQ vector_expression:y {: parser.vectorTable.put(x,y);RESULT = y;System.out.println("Vector assignment = [ " + y[0] + " , " + y[1] + " ]"); :}
+;
+scalar_expression ::= NUM:x {:RESULT = x;System.out.println("result is" + RESULT); :}
+                | SCALARVAR:x STAR scalar_expression:y {:RESULT = parser.symbolTable.get(x) * y;System.out.println("moltiplication result is" + RESULT); :}
+                | SCALARVAR:x DIVIDED scalar_expression:y {:RESULT = parser.symbolTable.get(x) / y;System.out.println("division result is" + RESULT); :}
+                | SCALARVAR:x PLUS scalar_expression:y {:RESULT = parser.symbolTable.get(x) + y; System.out.println("addition result is" + RESULT);:}
+                | SCALARVAR:x MINUS scalar_expression:y {:RESULT = parser.symbolTable.get(x) - y; System.out.println("subtraction result is" + RESULT);:}
+;
+
+vector_expression ::=  vector:y {:RESULT = y;:}
+                | vector:x STAR vector_expression:y {:RESULT = x; x[0] = x[0] * y[0]; x[1] = x[1] * y[1]; :}
+                | vector:x PLUS vector_expression:y {:RESULT = y; y[0] = y[0] + x[0]; y[1] = y[1] + x[1]; :}
+                | vector MINUS vector_expression
+                | NUM:x STAR vector_expression:y {:RESULT = y; y[0] = y[0] * x; y[1] = y[1] * x; :}
+                | NUM DOT vector_expression
+                | NUM:x PLUS vector_expression:y {:RESULT = y; y[0] = y[0] + x; y[1] = y[1] + x;:}
+                | NUM MINUS vector_expression
+;
+vector_scalar_expression ::= vector:x DOT vector_expression:y {:x[0] = x[0] * y[0]; x[1] = x[1] + y[1];x[0] = x[0] + x[1]; RESULT = x[0]; :};
+vector ::= VECTORVAR:x {:RESULT = parser.vectorTable.get(x);:}
+        | OSBRACKET SCALARVAR:x C SCALARVAR:y CSBRACKET {:RESULT = new Double[2];RESULT[0] = new Double(parser.symbolTable.get(x));RESULT[1] = new Double(parser.symbolTable.get(y));    :}
+        | OSBRACKET NUM:x C SCALARVAR:y CSBRACKET {:RESULT = new Double[2];RESULT[0] = new Double(x);RESULT[1] = new Double(parser.symbolTable.get(y));    :}
+        | OSBRACKET NUM:x C NUM:y CSBRACKET {:RESULT = new Double[2];RESULT[0] = new Double(x);RESULT[1] = new Double(y);    :}
+        | OSBRACKET SCALARVAR:x C NUM:y CSBRACKET {:RESULT = new Double[2];RESULT[0] = new Double(parser.symbolTable.get(x));RESULT[1] = new Double(y);    :}
+;
