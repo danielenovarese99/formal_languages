@@ -1,0 +1,48 @@
+//// EASY SOLUTION - NO MARKER 
+progr ::= "mp3list" DD (:) mp3_list "SERVER" DD date_time IPlist;
+
+****** FIRST PART >> MP3LIST
+mp3_list ::= mp3 | mp3_list mp3;
+mp3 ::= NUM "kb/s" DD song_list SC;
+//// the position of the above NUM is important for the one following >> they must be multiplied ///  for eachother
+
+song_list ::= song:x NUM:y  {:Integer rate = (Integer) parser.stack(-4); parser.sym.put(x,y*rate) :}
+		| song_list C song:x NUM:y;   {:Integer rate = (Integer) parser.stack(-6); parser.sym.put(x,y*rate) :}
+
+// for the first rule it's pos[-4], for the second is pos[-6] >>> explained in picture in this folder
+
+
+
+****** SECOND PART >> SERVER
+
+
+date_time ::= "time" hour "date" date
+		| "date" date "time" hour;
+
+IPlist ::= epsilon | IPlist ip;
+ip ::= my_ip DD song_list2:x {:System.out.println("TOTAL : " + x); :} ;
+song_list2 ::= song_name:x  {:RESULT = (Integer) parser.sym.get(x); System.out.println(x + " " + RESULT) :}	
+		| song_list2:y C song_name:x {:Integer dimension = (Integer) parser.sym.get(x); System.out.println(x + " " + RESULT); RESULT = y + dimension;  :}
+;// simply retrieve value with key, that i inserted in the first section
+
+
+my_ip ::= IP:x {:System.out.println(x); :} /// this is a trick used to print first the ip, then all the rules that are found after. otherwise,
+			//it will be printed after the entire parser reduction is done (printed after the list of songs)
+
+
+
+//// INTERMEDIATE SOLUTION WITH MARKER
+
+...
+
+mp3 ::= rate song_list SC;
+rate ::= NUM:x "kb/s" DD;  {: RESULT = x; :}
+	// the only difference between this grammar and the others is that i embedded the sequence of rate + kb/s in one single symbol - 
+	// the rest is the same
+song_list ::= song
+		| song_list C NT0 SONG;
+song ::= song_name::n NUM:x ; {: (Integer) rate = (Integer)parser.stack(-2); // stack(-2) is the position of "rate"
+						 parser.sym.put(n,x*rate): }
+
+NT0 ::= /* epsilon */ {:RESULT = (Integer) p.stack(-2); :} // THIS MARKER IS INSERTED AFTER THE COMMA "C" INSIDE OF SONG_LIST, SO THAT THE RATE
+										//VALUE FOR THE CURRENT SONG_LIST IS ALWAYS AVAILABLE AT THE SAME POSITION FOR EACH SONG

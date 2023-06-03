@@ -1,0 +1,75 @@
+import java_cup.runtime.*;
+
+
+parser code {:
+
+    public int label = 0;
+    public void report_error(String message, Object info) {
+        System.err.print("ERROR: Syntax error");
+        if (info instanceof Symbol)
+            if (((Symbol)info).left != -1){
+                int line = (((Symbol)info).left)+1;
+                int column = (((Symbol)info).right)+1;
+                System.err.print(" (line "+line+", column "+column+"): ");
+            } else System.err.print(": ");
+        else System.err.print(": ");
+    }
+
+    // Return semantic value of symbol in position (position)
+    public Object stack(int position) {
+        return (((Symbol)stack.elementAt(tos+position)).value);
+    }
+
+    public int genLabel(){
+        label++;
+        return label;
+    };
+
+:};
+
+terminal Double NUM;
+terminal String ID;
+terminal String DOUBLE_TYPE, INT_TYPE;
+terminal SC,C,DOT,OSBRACKET,CSBRACKET,OBRACKET,CBRACKET,OGBRACKET,SGBRACKET,EQ,BIGGER,SMALLER,MINUS,PLUS,STAR,DIVIDED,IF,WHILE,PRINTFUNC,QM;
+non terminal program,declarations_list,operation_list,operation,expression_list_marker,assignment_list,assignment,condition,function,expression_list,expression,cond;
+non terminal String declaration, var_list, variable;
+
+
+start with program;
+
+program ::= declarations_list SC operation_list;
+declarations_list ::= declarations_list SC declaration | declaration;
+declaration ::= DOUBLE_TYPE var_list 
+            | INT_TYPE var_list 
+;
+var_list ::= var_list C variable:x {: String data_type = (String) parser.stack(-3); System.out.println(data_type.toUpperCase() + " " + x); :}
+            | variable:x {: String data_type = (String) parser.stack(-1); System.out.println(data_type.toUpperCase() + " " + x); :};
+variable ::=  ID:x OSBRACKET NUM:y CSBRACKET {: RESULT = x + "[" + y.toString() + "]"; :}
+            | ID:x OSBRACKET ID CSBRACKET {: RESULT = x; :}
+            | ID:x {: RESULT = x; :}
+;
+
+operation_list ::= operation | operation_list operation;
+operation ::= assignment SC
+            | condition 
+            | function SC
+;
+expression_list_marker ::= expression_list:x {: System.out.println("EVAL : " + x); :};
+
+expression_list ::= expression:x {: RESULT = x.toString(); :}
+                | expression_list:x PLUS expression:y {: RESULT = x.toString() + " " + "+" + y.toString(); :}
+                | expression_list:x MINUS expression:y {: RESULT = x.toString() + " " + "-" + y.toString(); :}
+                | expression_list:x STAR expression:y {: RESULT = x.toString() + " " + "*" + y.toString(); :}
+                | expression_list:x DIVIDED expression:y {: RESULT = x.toString() + " " + "/" + y.toString(); :}
+                | expression_list:x SMALLER expression:y {: RESULT = x.toString() + " " + "< " + y.toString();:}
+                | expression_list:x BIGGER expression:y {: RESULT = x.toString() + " " + ">" + y.toString(); :}
+;
+expression ::= NUM:x  {: RESULT = x; :} 
+            | variable:x {: RESULT = x; :};
+
+assignment ::= variable:x EQ expression_list_marker {: System.out.println("ASS " + x); :};
+cond ::= IF {: System.out.print("L"+ genLabel()+" : "); :}
+    | WHILE {: System.out.print("L"+ genLabel()+" : "); :}
+;
+condition ::=  cond OBRACKET expression_list_marker:y CBRACKET OGBRACKET operation_list SGBRACKET;
+function ::= PRINTFUNC variable;
